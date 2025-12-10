@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  freeradius:
+    build: .
+    container_name: freeradius-oracle
+    ports:
+      - "1812:1812/udp"  # RADIUS authentication
+      - "1813:1813/udp"  # RADIUS accounting
+    environment:
+      - ORACLE_HOST=23cfree
+      - ORACLE_PORT=8521
+      - ORACLE_USER=system
+      - ORACLE_PASSWORD=Abcd#1234
+      - ORACLE_SID=freepdb11
+    volumes:
+      - ./logs:/var/log/freeradius
+      - ./certs:/etc/freeradius/3.0/certs
+    restart: unless-stopped
+    networks:
+      - radius-network
+
+networks:
+  radius-network:
+    driver: bridge
