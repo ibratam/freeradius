@@ -8,7 +8,7 @@ services:
       - "1812:1812/udp"  # RADIUS authentication
       - "1813:1813/udp"  # RADIUS accounting
     environment:
-      - ORACLE_HOST=23cfree
+      - ORACLE_HOST=host.docker.internal
       - ORACLE_PORT=8521
       - ORACLE_USER=system
       - ORACLE_PASSWORD=E
