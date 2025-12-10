@@ -11,7 +11,7 @@ services:
       - ORACLE_HOST=23cfree
       - ORACLE_PORT=8521
       - ORACLE_USER=system
-      - ORACLE_PASSWORD=Abcd#1234
+      - ORACLE_PASSWORD=E
       - ORACLE_SID=freepdb11
     volumes:
       - ./logs:/var/log/freeradius
@@ -19,7 +19,8 @@ services:
     restart: unless-stopped
     networks:
       - radius-network
-
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 networks:
   radius-network:
     driver: bridge
