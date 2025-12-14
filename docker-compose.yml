@@ -1,6 +1,22 @@
 version: '3.8'
 
 services:
+  oracle-db:
+    image: container-registry.oracle.com/database/free:latest
+    container_name: 23cfree
+    ports:
+      - "8521:1521"
+      - "8500:5500"
+      - "8023:8080"
+      - "9043:8443"
+      - "9922:22"
+    environment:
+      - ORACLE_PWD=E
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    restart: unless-stopped
+    networks:
+      - radius-network
   freeradius:
     build: .
     container_name: freeradius-oracle
@@ -16,11 +32,36 @@ services:
     volumes:
       - ./logs:/var/log/freeradius
       - ./certs:/etc/freeradius/3.0/certs
+    depends_on:
+      - oracle-db
     restart: unless-stopped
     networks:
       - radius-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: freeradius-api
+    ports:
+      - "3000:3000"        # adjust if your API uses another port
+    environment:
+      - MIKROTIK_IP=freeradius    # use the service name to reach the freeradius container
+      - MIKROTIK_PORT=1812
+      - MIKROTIK_USERNAME=sharedsecret
+      - MIKROTIK_PASSWORD=PASSWORD
+      - UISP_URL=URL
+      - UISP_API_TOKEN=TOKEN
+    volumes:
+      - ./api:/usr/src/app    # optional: mount source for live code changes
+    depends_on:
+      - freeradius
+    restart: unless-stopped
+    networks:
+      - radius-network
 networks:
   radius-network:
     driver: bridge
+volumes:
+  oracle-data:
