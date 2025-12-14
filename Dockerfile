@@ -30,13 +30,16 @@ libtalloc-dev \
 # Install Oracle Instant Client
 # --------------------------------------------------
 WORKDIR /opt/oracle
-
-RUN wget https://download.oracle.com/otn_software/linux/instantclient/1923000/instantclient-basic-linux.x64-19.23.0.0.0dbru.zip && \
-    wget https://download.oracle.com/otn_software/linux/instantclient/1923000/instantclient-sdk-linux.x64-19.23.0.0.0dbru.zip && \
-    unzip -o instantclient-basic-linux.x64-19.23.0.0.0dbru.zip && \
+COPY --chown=freerad:freerad instantclient-basic-linux.x64-19.23.0.0.0dbru.zip \
+     /opt/oracle/instantclient-basic-linux.x64-19.23.0.0.0dbru.zip
+COPY --chown=freerad:freerad instantclient-sdk-linux.x64-19.23.0.0.0dbru.zip \
+     /opt/oracle/instantclient-sdk-linux.x64-19.23.0.0.0dbru.zip
+     
+RUN unzip -o instantclient-basic-linux.x64-19.23.0.0.0dbru.zip && \
     unzip -o instantclient-sdk-linux.x64-19.23.0.0.0dbru.zip && \
     rm -f *.zip
-
+#wget https://download.oracle.com/otn_software/linux/instantclient/1923000/instantclient-basic-linux.x64-19.23.0.0.0dbru.zip && \
+#    wget https://download.oracle.com/otn_software/linux/instantclient/1923000/instantclient-sdk-linux.x64-19.23.0.0.0dbru.zip && \
 ENV ORACLE_HOME=/opt/oracle/instantclient_19_23
 #ENV LD_LIBRARY_PATH="$ORACLE_HOME"
 ENV LD_LIBRARY_PATH="$ORACLE_HOME:$LD_LIBRARY_PATH"
