@@ -34,8 +34,8 @@ BEGIN
     
     APEX_UTIL.create_user(
         p_user_name       => 'ADMIN',
-        p_email_address   => 'me@example.com',
-        p_web_password    => 'OrclAPEX1999!',
+        p_email_address   => 'ibraheem@goit.ps',
+        p_web_password    => 'Abcd#1234',
         p_developer_privs => 'ADMIN' );
         
     APEX_UTIL.set_security_group_id( null );
@@ -158,7 +158,32 @@ EOF
 su - <<EOF
 rm /opt/oracle/scripts/startup/00_start_apex_ords_installer.sh
 EOF
+sqlplus / as sysdba <<EOF
+ALTER SESSION SET CONTAINER = FREEPDB1;
+BEGIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+    host => '*',
+    ace  => xs$ace_type(
+      privilege_list => xs$name_list('connect','resolve'),
+      principal_name => 'APEX_240200',
+      principal_type => xs_acl.ptype_db
+    )
+  );
+END;
+/
+BEGIN
+  DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+    host => '*',
+    ace  => xs$ace_type(
+      privilege_list => xs$name_list('connect','resolve'),
+      principal_name => 'GO_TECH_RADIUS',
+      principal_type => xs_acl.ptype_db
+    )
+  );
+END;
+/
 
+EOF
 # Calculate the elapsed time
 end_time=$(date +%s)
 elapsed_time=$((end_time - start_time))
