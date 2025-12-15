@@ -57,6 +57,7 @@ services:
       - UISP_API_TOKEN=TOKEN
     volumes:
       - ./api:/usr/src/app    # optional: mount source for live code changes
+      - /var/run/docker.sock:/var/run/docker.sock #mount docker socket to allow api to interact with docker
     depends_on:
       - freeradius
     restart: unless-stopped

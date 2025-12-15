@@ -9,6 +9,10 @@ const PORT = process.env.PORT || 3000;
 const RADIUS_PORT = 3799;
 const UISP_URL=process.env.UISP_URL;
 const UISP_API_TOKEN=process.env.UISP_API_TOKEN;
+const Docker = require('dockerode');
+const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -681,6 +685,155 @@ app.post('/api/pppoe/disconnect', (req, res) => {
     });
 });
 
+
+// Endpoint to check FreeRADIUS status
+app.get('/api/container/:name/status', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.name);
+        const info = await container.inspect();
+
+        res.json({
+            name: info.Name.replace('/', ''),
+            status: info.State.Status,
+            running: info.State.Running,
+            health: info.State.Health?.Status || 'N/A',
+            started_at: info.State.StartedAt,
+            finished_at: info.State.FinishedAt,
+            restart_count: info.RestartCount
+        });
+    } catch (error) {
+        if (error.statusCode === 404) {
+            res.status(404).json({ error: 'Container not found' });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
+    }
+});
+
+// Quick health check endpoint
+app.get('/api/freeradius/health', async (req, res) => {
+    try {
+        const container = docker.getContainer('freeradius');
+        const info = await container.inspect();
+
+        res.json({
+            healthy: info.State.Running,
+            status: info.State.Status
+        });
+    } catch (error) {
+        res.status(500).json({
+            healthy: false,
+            error: error.message
+        });
+    }
+});
+
+// List all containers
+app.get('/api/containers', async (req, res) => {
+    try {
+        const containers = await docker.listContainers({ all: true });
+        res.json(containers.map(c => ({
+            id: c.Id,
+            name: c.Names[0].replace('/', ''),
+            status: c.State,
+            image: c.Image
+        })));
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+app.post('/api/container/:name/restart', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.name);
+
+        // Check if container exists
+        await container.inspect();
+
+        // Restart the container
+        await container.restart();
+
+        // Wait a bit and get new status
+        setTimeout(async () => {
+            const info = await container.inspect();
+            res.json({
+                success: true,
+                message: `Container ${req.params.name} restarted successfully`,
+                status: info.State.Status,
+                running: info.State.Running,
+                restarted_at: new Date().toISOString()
+            });
+        }, 2000);
+
+    } catch (error) {
+        if (error.statusCode === 404) {
+            res.status(404).json({
+                success: false,
+                error: 'Container not found'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+});
+
+// Stop a container
+app.post('/api/container/:name/stop', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.name);
+        await container.stop();
+        res.json({
+            success: true,
+            message: `Container ${req.params.name} stopped successfully`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Start a container
+app.post('/api/container/:name/start', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.name);
+        await container.start();
+        res.json({
+            success: true,
+            message: `Container ${req.params.name} started successfully`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get container logs (useful for debugging)
+app.get('/api/container/:name/logs', async (req, res) => {
+    try {
+        const container = docker.getContainer(req.params.name);
+        const logs = await container.logs({
+            stdout: true,
+            stderr: true,
+            tail: 100 // Last 100 lines
+        });
+
+        res.json({
+            success: true,
+            logs: logs.toString('utf8')
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Unhandled error:', error);
