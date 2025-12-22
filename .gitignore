@@ -1,2 +1,6 @@
 /Dockerfile.save
 /Dockerfile.save.1
+/api/node_modules
+/api/.env
+/frontend/node_modules
+/.idea
